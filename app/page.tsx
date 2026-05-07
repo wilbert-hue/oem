@@ -21,7 +21,7 @@ export default function DashboardPage() {
             <div className="text-center">
               <h1 className="mb-1 text-2xl font-bold text-black">Coherent Dashboard</h1>
               <h2 className="text-sm text-black">
-                Earthmoving OEM — Monthly &amp; Quarterly Sales Records (CMI)
+                Earthmoving OEM's — Monthly &amp; Quarterly Sales Records (CMI)
               </h2>
             </div>
           </div>
