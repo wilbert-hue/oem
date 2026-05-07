@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import {
+  ALLOWED_DEMO_COUNTRIES,
+  COUNTRY_FILTER_GROUPS,
   DEMO_ROWS,
   EARTHMOVING_OEMS,
   EQUIPMENT_CATEGORIES,
+  type CountryFilterOption,
   type EarthmovingOem,
   type EquipmentCategory,
   type QuarterId,
@@ -13,6 +16,7 @@ import {
   groupMonthsByQuarter,
   monthName,
   QUARTER_MONTHS,
+  rowMatchesCountryFilter,
 } from '@/lib/earthmoving-sales-demo'
 
 const YEARS = [2025, 2026] as const
@@ -60,6 +64,8 @@ function oemRowSpan(rows: SalesDemoRow[], index: number): number | null {
 
 const selectClassName =
   'min-h-11 min-w-[8.5rem] rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition-colors hover:border-slate-300 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20'
+
+const countrySelectClassName = `${selectClassName} min-w-[12rem] max-w-[20rem] sm:min-w-[14rem]`
 
 function FilterCheckList<T extends string>(props: {
   title: string
@@ -120,6 +126,7 @@ export function EarthmovingSalesTable() {
   const [year, setYear] = useState<(typeof YEARS)[number]>(2025)
   const [quarter, setQuarter] = useState<QuarterId>('all')
   const [month, setMonth] = useState<MonthFilter>('all')
+  const [countryFilter, setCountryFilter] = useState<CountryFilterOption | 'all'>('all')
 
   useEffect(() => {
     if (month === 'all' || quarter === 'all') return
@@ -131,7 +138,11 @@ export function EarthmovingSalesTable() {
 
   const months = useMemo(() => visibleMonths(year, quarter, month), [year, quarter, month])
   const headerGroups = useMemo(() => groupMonthsByQuarter(months), [months])
-  const rows = useMemo(() => filterRows(DEMO_ROWS, categorySel, oemSel), [categorySel, oemSel])
+  const rows = useMemo(() => {
+    return filterRows(DEMO_ROWS, categorySel, oemSel)
+      .filter((r) => ALLOWED_DEMO_COUNTRIES.has(r.country))
+      .filter((r) => rowMatchesCountryFilter(r, countryFilter))
+  }, [categorySel, oemSel, countryFilter])
 
   const monthOptions = useMemo(() => {
     const base = quarter === 'all' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [...QUARTER_MONTHS[quarter]]
@@ -219,6 +230,30 @@ export function EarthmovingSalesTable() {
                   <option key={m} value={m}>
                     {monthName(m)}
                   </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex min-w-[12rem] max-w-full flex-col gap-2 sm:min-w-[14rem]">
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="sales-country">
+                Country
+              </label>
+              <select
+                id="sales-country"
+                value={countryFilter}
+                onChange={(e) =>
+                  setCountryFilter(e.target.value === 'all' ? 'all' : (e.target.value as CountryFilterOption))
+                }
+                className={countrySelectClassName}
+              >
+                <option value="all">All countries</option>
+                {COUNTRY_FILTER_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.countries.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

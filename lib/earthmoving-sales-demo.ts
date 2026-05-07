@@ -38,6 +38,39 @@ export type EarthmovingOem = (typeof EARTHMOVING_OEMS)[number]
 
 export type QuarterId = 'all' | 'Q1' | 'Q2' | 'Q3' | 'Q4'
 
+/** GCC members: used in demo data and under the “GCC” group in the country filter. */
+export const GCC_FILTER_COUNTRIES = [
+  'Saudi Arabia',
+  'United Arab Emirates',
+  'Qatar',
+  'Kuwait',
+  'Oman',
+  'Bahrain',
+] as const
+
+/** Other Middle East markets: under the “Middle East Countries” group in the filter. */
+export const MIDDLE_EAST_FILTER_COUNTRIES = [
+  'Turkey',
+  'Israel',
+  'Egypt',
+  'Iran',
+  'Iraq',
+  'Other Middle East Countries',
+] as const
+
+/** Hierarchical groups for the country dropdown (`<optgroup>` labels + options). */
+export const COUNTRY_FILTER_GROUPS = [
+  { label: 'GCC', countries: GCC_FILTER_COUNTRIES },
+  { label: 'Middle East Countries', countries: MIDDLE_EAST_FILTER_COUNTRIES },
+] as const
+
+/** Flat union of every country that may appear in the table or filter. */
+export const ALL_FILTER_COUNTRIES = [...GCC_FILTER_COUNTRIES, ...MIDDLE_EAST_FILTER_COUNTRIES] as const
+
+export type CountryFilterOption = (typeof ALL_FILTER_COUNTRIES)[number]
+
+export const ALLOWED_DEMO_COUNTRIES: ReadonlySet<string> = new Set(ALL_FILTER_COUNTRIES)
+
 export type SalesDemoRow = {
   oem: EarthmovingOem
   equipmentType: string
@@ -49,6 +82,14 @@ export type SalesDemoRow = {
   city: string
   /** year → month (1–12) → units sold */
   units: Record<number, Record<number, number>>
+}
+
+export function rowMatchesCountryFilter(
+  row: SalesDemoRow,
+  filter: CountryFilterOption | 'all',
+): boolean {
+  if (filter === 'all') return true
+  return row.country === filter
 }
 
 const MONTH_NAMES = [
@@ -85,12 +126,20 @@ function hashStr(s: string): number {
 
 const GEO = [
   { country: 'Saudi Arabia', region: 'GCC', city: 'Jeddah' },
+  { country: 'Saudi Arabia', region: 'GCC', city: 'Riyadh' },
   { country: 'United Arab Emirates', region: 'GCC', city: 'Dubai' },
-  { country: 'United States', region: 'North America', city: 'Houston' },
-  { country: 'Germany', region: 'Western Europe', city: 'Hannover' },
-  { country: 'India', region: 'South Asia', city: 'Chennai' },
-  { country: 'Australia', region: 'Oceania', city: 'Newcastle' },
-] as const
+  { country: 'United Arab Emirates', region: 'GCC', city: 'Abu Dhabi' },
+  { country: 'Qatar', region: 'GCC', city: 'Doha' },
+  { country: 'Kuwait', region: 'GCC', city: 'Kuwait City' },
+  { country: 'Oman', region: 'GCC', city: 'Muscat' },
+  { country: 'Bahrain', region: 'GCC', city: 'Manama' },
+  { country: 'Turkey', region: 'Middle East', city: 'Istanbul' },
+  { country: 'Israel', region: 'Middle East', city: 'Tel Aviv' },
+  { country: 'Egypt', region: 'Middle East', city: 'Cairo' },
+  { country: 'Iran', region: 'Middle East', city: 'Tehran' },
+  { country: 'Iraq', region: 'Middle East', city: 'Baghdad' },
+  { country: 'Other Middle East Countries', region: 'Middle East', city: 'Regional hub' },
+] as const satisfies ReadonlyArray<{ country: CountryFilterOption; region: string; city: string }>
 
 const TEMPLATES: Array<{
   equipmentType: string
@@ -163,7 +212,7 @@ const TEMPLATES: Array<{
 function unitsForKey(seed: number, year: number, month: number): number {
   const h = hashStr(`${seed}|${year}|${month}`)
   if (h % 17 === 0) return 0
-  return (h % 9) + 1
+  return (h % 4) + 1
 }
 
 function buildUnitsMatrix(seed: number): Record<number, Record<number, number>> {
